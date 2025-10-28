@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import FastAPI, HTTPException, Depends, status
 from typing import Annotated
 from sqlalchemy.orm import Session
@@ -150,3 +151,38 @@ def read_student_class(student_id: int, class_id: int, semester_id: int, db: DBS
     if not entry:
         raise HTTPException(status_code=404, detail="StudentClass not found")
     return entry
+
+
+@app.get("/dashboard/summary")
+def get_dashboard_summary(db: DBSession):
+    # --- Tổng số học sinh ---
+    total_students = db.query(Student).count()
+
+    # --- Tổng số lớp ---
+    total_grades = db.query(Class).count()
+
+    # --- Năm học hiện tại ---
+    # Giả định: lấy kỳ học có end_date mới nhất
+    active_semester = db.query(Semester).order_by(
+        Semester.end_date.desc()).first()
+    active_school_year = (
+        f"{active_semester.start_date.year}-{active_semester.end_date.year}"
+        if active_semester else "Chưa có"
+    )
+
+    # --- Các thống kê đăng ký (giả lập dữ liệu demo) ---
+    # Nếu bạn có bảng `Registration`, có thể thay thế phần dưới bằng query thật
+    registrations_applied = 120
+    registrations_completed = 100
+    registrations_pending = 15
+    registrations_rejected = 5
+
+    return {
+        "totalStudents": total_students,
+        "totalGrades": total_grades,
+        "activeSchoolYear": active_school_year,
+        "registrationsApplied": registrations_applied,
+        "registrationsCompleted": registrations_completed,
+        "registrationsPending": registrations_pending,
+        "registrationsRejected": registrations_rejected,
+    }
