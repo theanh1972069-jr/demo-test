@@ -1,7 +1,7 @@
 // App.jsx
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Sidebar from './Sidebar';
+import Sidebar from './SideBar';
 import TopBar from './TopBar';
 import Dashboard from './Dashboard';
 import StudentsPage from './StudentsPage';

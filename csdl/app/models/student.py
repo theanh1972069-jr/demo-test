@@ -7,6 +7,7 @@ from app.database.base_class import Base
 
 class Student(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
+    student_id = Column(String(50), nullable=False, unique=True, index=True)
     fullname = Column(String(100), nullable=False)
     firstname = Column(String(50), nullable=False)
     # True = Nam, False = Nữ

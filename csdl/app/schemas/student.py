@@ -4,6 +4,7 @@ from pydantic import BaseModel, validator
 
 
 class StudentBase(BaseModel):
+    student_id: str
     fullname: str
     firstname: str
     gender: bool
