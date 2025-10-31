@@ -4,7 +4,6 @@ from app.schemas.teacher import TeacherInDB
 
 class ClassBase(BaseModel):
     name: str
-    teacher_id: int
 
 
 class ClassCreate(ClassBase):
@@ -17,7 +16,6 @@ class ClassUpdate(ClassBase):
 
 class ClassInDB(ClassBase):
     id: int
-    teacher: TeacherInDB
 
     class Config:
         from_attributes = True

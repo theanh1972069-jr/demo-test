@@ -27,9 +27,19 @@ origins = [
     'http://localhost:5173'
 ]
 
+
+origins = [
+    "http://localhost:5173",  # frontend React dev server
+]
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_credentials=True,
+    # ← Cho phép tất cả phương thức: GET, POST, PUT, DELETE, OPTIONS...
+    allow_methods=["*"],
+    # ← Cho phép tất cả header (vd: Content-Type, Authorization)
+    allow_headers=["*"],
 )
 
 
