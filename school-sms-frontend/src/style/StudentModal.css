@@ -44,6 +44,8 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  background-color: white;
+  color: black;
 }
 
 .modal-actions {
@@ -54,11 +56,17 @@
 }
 
 .cancel-btn {
+  background-color: #ff4d4f;
+  /* màu đỏ */
+  color: white;
+  /* chữ màu trắng */
   padding: 8px 16px;
-  border: 1px solid #ddd;
-  background-color: white;
-  border-radius: 4px;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: background-color 0.2s;
 }
 
 .submit-btn {

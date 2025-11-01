@@ -1,3 +1,4 @@
+from fastapi import Body
 from datetime import date
 from fastapi import FastAPI, HTTPException, Depends, status
 from typing import Annotated
@@ -27,10 +28,6 @@ origins = [
     'http://localhost:5173'
 ]
 
-
-origins = [
-    "http://localhost:5173",  # frontend React dev server
-]
 
 app.add_middleware(
     CORSMiddleware,
@@ -87,6 +84,37 @@ def read_student(student_id: int, db: DBSession):
     return student
 
 
+@app.put("/students/{student_id}", response_model=StudentInDB)
+def update_student(student_id: int, student_update: StudentCreate, db: DBSession):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    for key, value in student_update.dict(exclude_unset=True).items():
+        setattr(student, key, value)
+
+    db.commit()
+    db.refresh(student)
+    return student
+
+
+@app.delete("/students/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_student(student_id: int, db: DBSession):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+
+    db.delete(student)
+    db.commit()
+    return None
+
+
+@app.get("/students/", response_model=list[StudentInDB])
+def get_students(db: DBSession):
+    students = db.query(Student).all()
+    return students
+
+
 # teacher
 @app.post("/teachers/", status_code=status.HTTP_201_CREATED, response_model=TeacherInDB)
 def create_teacher(teacher: TeacherCreate, db: DBSession):
@@ -103,6 +131,37 @@ def read_teacher(teacher_id: int, db: DBSession):
     if not teacher:
         raise HTTPException(status_code=404, detail="Teacher not found")
     return teacher
+
+
+@app.get("/teachers/", response_model=list[TeacherInDB])
+def get_teachers(db: DBSession):
+    teachers = db.query(Teacher).all()
+    return teachers
+
+
+@app.put("/teachers/{teacher_id}", response_model=TeacherInDB)
+def update_teacher(teacher_id: int, teacher_update: TeacherCreate, db: DBSession):
+    teacher = db.query(Teacher).filter(Teacher.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    for key, value in teacher_update.dict().items():
+        setattr(teacher, key, value)
+
+    db.commit()
+    db.refresh(teacher)
+    return teacher
+
+
+@app.delete("/teachers/{teacher_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_teacher(teacher_id: int, db: DBSession):
+    teacher = db.query(Teacher).filter(Teacher.id == teacher_id).first()
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+
+    db.delete(teacher)
+    db.commit()
+    return None
 
 
 # class

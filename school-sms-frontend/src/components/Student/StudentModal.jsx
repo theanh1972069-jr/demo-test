@@ -1,38 +1,59 @@
 import React, { useState } from 'react';
-import '../style/StudentModal.css';
+import '../../style/StudentModal.css';
 
-const StudentModal = ({ isOpen, onClose, onSubmit, isSubmitting = false, submitError = null }) => {
+const StudentModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  isSubmitting = false,
+  submitError = null
+}) => {
   const [formData, setFormData] = useState({
+    student_id: '',
     fullname: '',
     firstname: '',
-    gender: '1',
+    gender: true, // boolean
     date_of_birth: '',
     phone: '',
     guardian: '',
     guardian_phone: '',
-    admission_date: '',
-    image: null
+    admission_date: ''
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
-  const handleFileChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      image: e.target.files[0]
+      [name]:
+        name === 'gender'
+          ? value === 'true' // convert string thành boolean
+          : value
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-    onSubmit(formData);
+
+    if (!formData.student_id || !formData.fullname || !formData.firstname || !formData.date_of_birth || !formData.phone) {
+      alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+      return;
+    }
+
+    const payload = {
+      student_id: formData.student_id.trim(),
+      fullname: formData.fullname.trim(),
+      firstname: formData.firstname.trim(),
+      gender: formData.gender,
+      date_of_birth: formData.date_of_birth,
+      phone: formData.phone.trim(),
+      guardian: formData.guardian?.trim() || null,
+      guardian_phone: formData.guardian_phone?.trim() || null,
+      admission_date: formData.admission_date || new Date().toISOString().split('T')[0]
+    };
+
+    onSubmit(payload);
   };
 
   if (!isOpen) return null;
@@ -41,8 +62,20 @@ const StudentModal = ({ isOpen, onClose, onSubmit, isSubmitting = false, submitE
     <div className="modal-overlay">
       <div className="modal-content">
         <h2>Add New Student</h2>
+
         <form onSubmit={handleSubmit}>
           <div className="form-grid">
+            <div className="form-group">
+              <label>Student ID</label>
+              <input
+                type="text"
+                name="student_id"
+                value={formData.student_id}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
             <div className="form-group">
               <label>Full Name</label>
               <input
@@ -61,18 +94,20 @@ const StudentModal = ({ isOpen, onClose, onSubmit, isSubmitting = false, submitE
                 name="firstname"
                 value={formData.firstname}
                 onChange={handleChange}
+                required
               />
             </div>
 
             <div className="form-group">
-              <label>phone</label>
-              <input
-                type="text"
-                name="phone"
-                value={formData.phone}
+              <label>Gender</label>
+              <select
+                name="gender"
+                value={formData.gender.toString()} // convert boolean sang string
                 onChange={handleChange}
-                required
-              />
+              >
+                <option value="true">Male</option>
+                <option value="false">Female</option>
+              </select>
             </div>
 
             <div className="form-group">
@@ -87,11 +122,14 @@ const StudentModal = ({ isOpen, onClose, onSubmit, isSubmitting = false, submitE
             </div>
 
             <div className="form-group">
-              <label>Gender</label>
-              <select name="gender" value={formData.gender} onChange={handleChange}>
-                <option value="1">Male</option>
-                <option value="0">Female</option>
-              </select>
+              <label>Phone</label>
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+              />
             </div>
 
             <div className="form-group">
@@ -114,7 +152,7 @@ const StudentModal = ({ isOpen, onClose, onSubmit, isSubmitting = false, submitE
               />
             </div>
 
-          <div className="form-group">
+            <div className="form-group">
               <label>Admission Date</label>
               <input
                 type="date"
@@ -123,20 +161,25 @@ const StudentModal = ({ isOpen, onClose, onSubmit, isSubmitting = false, submitE
                 onChange={handleChange}
               />
             </div>
-
-            <div className="form-group">
-              <label>Upload Image</label>
-              <input
-                type="file"
-                name="image"
-                onChange={handleFileChange}
-                accept="image/*"
-              />
-            </div>
           </div>
 
+          {submitError && (
+            <p className="error-text">
+              {Array.isArray(submitError)
+                ? submitError.join(', ')
+                : submitError}
+            </p>
+          )}
+
           <div className="modal-actions">
-            <button type="button" onClick={onClose} className="cancel-btn" disabled={isSubmitting}>Cancel</button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="cancel-btn"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
             <button type="submit" className="submit-btn" disabled={isSubmitting}>
               {isSubmitting ? 'Saving...' : 'Add Student'}
             </button>
