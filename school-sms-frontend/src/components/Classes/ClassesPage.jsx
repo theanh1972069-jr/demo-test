@@ -1,106 +1,235 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // ✅ thêm dòng này
-import "../../style/Classes.css"; // dùng chung CSS
-
-const initialClasses = [
-  { id: 1, name: "Grade 1" },
-  { id: 2, name: "Grade 2" },
-  { id: 3, name: "Grade 3" },
-  { id: 4, name: "Grade 4" },
-];
+import React, { useEffect, useState } from 'react';
+import apiClient from '../../api/api';
+import '../../style/ClassesPage.css';
+import ClassModal from './ClassModal';
+import ClassEdit from './ClassEdit';
+import ClassView from './ClassView';
 
 const ClassesPage = () => {
-  const [classesData, setClassesData] = useState(initialClasses);
-  const [searchTerm, setSearchTerm] = useState("");
-  const navigate = useNavigate();
-  const filteredClasses = classesData.filter((cls) =>
-    cls.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isViewOpen, setIsViewOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  const handleAdd = () => {
-    navigate("/classes/add");
-  };
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const classesPerPage = 10;
 
-  const handleEdit = (id) => {
-    const cls = classesData.find((c) => c.id === id);
-    const newName = prompt("Edit class/grade name:", cls.name);
-    if (newName) {
-      setClassesData(
-        classesData.map((c) => (c.id === id ? { ...c, name: newName } : c))
-      );
+  // Fetch data
+  const fetchClasses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiClient.get('/classes/');
+      if (!response.data) throw new Error('Không có dữ liệu từ server');
+      setClasses(response.data);
+    } catch (err) {
+      console.error("Chi tiết lỗi:", err);
+      setError("Không thể tải danh sách lớp học");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this class?")) {
-      setClassesData(classesData.filter((c) => c.id !== id));
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  // Search filter
+  const filteredClasses = classes.filter(cls =>
+    cls.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Pagination logic
+  const indexOfLastClass = currentPage * classesPerPage;
+  const indexOfFirstClass = indexOfLastClass - classesPerPage;
+  const currentClasses = filteredClasses.slice(indexOfFirstClass, indexOfLastClass);
+  const totalPages = Math.ceil(filteredClasses.length / classesPerPage);
+
+  const getPageNumbers = () => {
+    const pages = [];
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, currentPage + 2);
+
+    if (startPage > 1) pages.push(1, '...');
+    for (let i = startPage; i <= endPage; i++) pages.push(i);
+    if (endPage < totalPages) pages.push('...', totalPages);
+
+    return pages;
+  };
+
+  const handlePageChange = (page) => {
+    if (page === '...') return;
+    setCurrentPage(page);
+  };
+
+  const handlePrev = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
+
+  // Add class
+  const handleAddClass = async (formData) => {
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+      const payload = { name: formData.name.trim() };
+      await apiClient.post('/classes/', payload, { headers: { 'Content-Type': 'application/json' } });
+      await fetchClasses();
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Error adding class:', err.response?.data || err.message);
+      setSubmitError(err.response?.data?.detail || 'Lỗi khi thêm lớp');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Update class
+  const handleUpdateClass = async (formData) => {
+    if (!selectedClass) return;
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+      const payload = { name: formData.name.trim() };
+      await apiClient.put(`/classes/${selectedClass.id}`, payload, { headers: { 'Content-Type': 'application/json' } });
+      await fetchClasses();
+      setIsEditOpen(false);
+      setSelectedClass(null);
+    } catch (err) {
+      console.error('Error updating class:', err.response?.data || err.message);
+      setSubmitError(err.response?.data?.detail || 'Lỗi khi cập nhật lớp');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="container">
-      <div className="header">
-        <h2>Classes/Grades Management</h2>
-        <button className="button-teal" onClick={handleAdd}>
-          Add New Class
-        </button>
+    <div className="dashboard-content">
+      <div className="header-wrapper">
+        <div className="title-section">
+          <h1 className="centered-title">Manage Classes</h1>
+        </div>
+        <div className="controls-section">
+          <input
+            type="text"
+            placeholder="Search By Class Name"
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            className="search-input"
+          />
+          <button className="add-button" onClick={() => setIsModalOpen(true)}>
+            Add New Class
+          </button>
+        </div>
       </div>
 
-      <input
-        type="text"
-        placeholder="Search By Class/Grade"
-        className="input-search"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
+      {loading && <div>Loading...</div>}
+      {error && <div className="error-message">{error}</div>}
+
+      {!loading && !error && currentClasses.length > 0 && (
+        <>
+          <table className="classes-table">
+            <thead>
+              <tr>
+                <th>S No</th>
+                <th>Class Name</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentClasses.map((cls, index) => (
+                <tr key={cls.id}>
+                  <td>{indexOfFirstClass + index + 1}</td>
+                  <td>{cls.name}</td>
+                  <td className="actions">
+                    <button
+                      className="view-btn"
+                      onClick={() => {
+                        setSelectedClass(cls);
+                        setIsViewOpen(true);
+                      }}
+                    >
+                      View
+                    </button>
+                    <button
+                      className="edit-btn"
+                      onClick={() => {
+                        setSelectedClass(cls);
+                        setIsEditOpen(true);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="delete-btn"
+                      onClick={async () => {
+                        if (window.confirm('Bạn có chắc muốn xóa lớp học này?')) {
+                          await apiClient.delete(`/classes/${cls.id}`);
+                          await fetchClasses();
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Pagination */}
+          <div className="pagination">
+            <button onClick={handlePrev} disabled={currentPage === 1}>Previous</button>
+            {getPageNumbers().map((page, idx) => (
+              <button
+                key={idx}
+                onClick={() => handlePageChange(page)}
+                className={page === currentPage ? 'active-page' : ''}
+                disabled={page === '...'}
+              >
+                {page}
+              </button>
+            ))}
+            <button onClick={handleNext} disabled={currentPage === totalPages}>Next</button>
+          </div>
+        </>
+      )}
+
+      {!loading && !error && filteredClasses.length === 0 && <div>No classes found.</div>}
+
+      {/* Modals */}
+      <ClassModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddClass}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
       />
 
-      <div className="table-wrapper">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>S No</th>
-              <th>Class/Grade</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredClasses.map((cls, index) => (
-              <tr key={cls.id}>
-                <td>{index + 1}</td>
-                <td>{cls.name}</td>
-                <td style={{ display: "flex", gap: "8px" }}>
-                  <button
-                    className="button-green"
-                    onClick={() => handleEdit(cls.id)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="button-red"
-                    onClick={() => handleDelete(cls.id)}
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ClassEdit
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        classItem={selectedClass}
+        onSubmit={handleUpdateClass}
+        isSubmitting={isSubmitting}
+        submitError={submitError}
+      />
 
-      <div className="pagination">
-        <div>
-          Rows per page:
-          <select>
-            <option>10</option>
-            <option>20</option>
-            <option>50</option>
-          </select>
-        </div>
-        <div>
-          1-{filteredClasses.length} of {filteredClasses.length}
-        </div>
-      </div>
+      <ClassView
+        isOpen={isViewOpen}
+        onClose={() => setIsViewOpen(false)}
+        classItem={selectedClass}
+      />
     </div>
   );
 };

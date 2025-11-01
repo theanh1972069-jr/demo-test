@@ -21,10 +21,6 @@ const StudentsPage = () => {
   // state edit
   const [isEditOpen, setIsEditOpen] = useState(false);
 
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const studentsPerPage = 10;
-
   const fetchStudents = async () => {
     try {
       setLoading(true);
@@ -43,43 +39,6 @@ const StudentsPage = () => {
   useEffect(() => {
     fetchStudents();
   }, []);
-
-  // Tìm kiếm
-  const filteredStudents = students.filter(student =>
-    student.fullname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    student.student_id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Pagination logic
-  const indexOfLastStudent = currentPage * studentsPerPage;
-  const indexOfFirstStudent = indexOfLastStudent - studentsPerPage;
-  const currentStudents = filteredStudents.slice(indexOfFirstStudent, indexOfLastStudent);
-  const totalPages = Math.ceil(filteredStudents.length / studentsPerPage);
-
-  const getPageNumbers = () => {
-    const pages = [];
-    let startPage = Math.max(1, currentPage - 2);
-    let endPage = Math.min(totalPages, currentPage + 2);
-
-    if (startPage > 1) pages.push(1, '...');
-    for (let i = startPage; i <= endPage; i++) pages.push(i);
-    if (endPage < totalPages) pages.push('...', totalPages);
-
-    return pages;
-  };
-
-  const handlePageChange = (page) => {
-    if (page === '...') return;
-    setCurrentPage(page);
-  };
-
-  const handlePrev = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
 
   // Thêm sinh viên
   const handleAddStudent = async (formData) => {
@@ -146,9 +105,9 @@ const StudentsPage = () => {
         <div className="controls-section">
           <input
             type="text"
-            placeholder="Search By Student ID or Name"
+            placeholder="Search By Student ID"
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
           />
           <button className="add-button" onClick={() => setIsModalOpen(true)}>
@@ -160,80 +119,60 @@ const StudentsPage = () => {
       {loading && <div>Loading...</div>}
       {error && <div className="error-message">{error}</div>}
 
-      {!loading && !error && currentStudents.length > 0 && (
-        <>
-          <table className="students-table">
-            <thead>
-              <tr>
-                <th>S No</th>
-                <th>Name</th>
-                <th>Guardian</th>
-                <th>Phone</th>
-                <th>Actions</th>
+      {!loading && !error && students.length > 0 && (
+        <table className="students-table">
+          <thead>
+            <tr>
+              <th>S No</th>
+              <th>Name</th>
+              <th>Guardian</th>
+              <th>Phone</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((student, index) => (
+              <tr key={student.id}>
+                <td>{index + 1}</td>
+                <td>{student.fullname}</td>
+                <td>{student.guardian}</td>
+                <td>{student.phone}</td>
+                <td className="actions">
+                  <button
+                    className="view-btn"
+                    onClick={() => {
+                      setSelectedStudent(student);
+                      setIsViewOpen(true);
+                    }}
+                  >
+                    View
+                  </button>
+                  <button
+                    className="edit-btn"
+                    onClick={() => {
+                      setSelectedStudent(student);
+                      setIsEditOpen(true);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="delete-btn"
+                    onClick={async () => {
+                      if (window.confirm('Bạn có chắc muốn xóa sinh viên này?')) {
+                        await apiClient.delete(`/students/${student.id}`);
+                        await fetchStudents();
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {currentStudents.map((student, index) => (
-                <tr key={student.id}>
-                  <td>{indexOfFirstStudent + index + 1}</td>
-                  <td>{student.fullname}</td>
-                  <td>{student.guardian}</td>
-                  <td>{student.phone}</td>
-                  <td className="actions">
-                    <button
-                      className="view-btn"
-                      onClick={() => {
-                        setSelectedStudent(student);
-                        setIsViewOpen(true);
-                      }}
-                    >
-                      View
-                    </button>
-                    <button
-                      className="edit-btn"
-                      onClick={() => {
-                        setSelectedStudent(student);
-                        setIsEditOpen(true);
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="delete-btn"
-                      onClick={async () => {
-                        if (window.confirm('Bạn có chắc muốn xóa sinh viên này?')) {
-                          await apiClient.delete(`/students/${student.id}`);
-                          await fetchStudents();
-                        }
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {/* Pagination */}
-          <div className="pagination">
-            <button onClick={handlePrev} disabled={currentPage === 1}>Previous</button>
-            {getPageNumbers().map((page, idx) => (
-              <button
-                key={idx}
-                onClick={() => handlePageChange(page)}
-                className={page === currentPage ? 'active-page' : ''}
-                disabled={page === '...'}
-              >
-                {page}
-              </button>
             ))}
-            <button onClick={handleNext} disabled={currentPage === totalPages}>Next</button>
-          </div>
-        </>
+          </tbody>
+        </table>
       )}
-
-      {!loading && !error && filteredStudents.length === 0 && <div>No students found.</div>}
 
       {/* Modal thêm sinh viên */}
       <StudentModal

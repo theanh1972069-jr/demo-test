@@ -181,6 +181,49 @@ def read_class(class_id: int, db: DBSession):
         raise HTTPException(status_code=404, detail="Class not found")
     return class_
 
+# Lấy danh sách tất cả class
+
+
+@app.get("/classes/", response_model=list[ClassInDB])
+def get_classes(db: DBSession):
+    classes = db.query(Class).all()
+    return classes
+
+# Cập nhật class
+
+
+@app.put("/classes/{class_id}", response_model=ClassInDB)
+def update_class(class_id: int, class_update: ClassCreate, db: DBSession):
+    class_item = db.query(Class).filter(Class.id == class_id).first()
+    if not class_item:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    # Kiểm tra trùng tên (nếu có đổi)
+    existing = db.query(Class).filter(
+        Class.name == class_update.name, Class.id != class_id).first()
+    if existing:
+        raise HTTPException(
+            status_code=400, detail="Class name already exists")
+
+    for key, value in class_update.dict().items():
+        setattr(class_item, key, value)
+
+    db.commit()
+    db.refresh(class_item)
+    return class_item
+
+
+# Xóa class
+@app.delete("/classes/{class_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_class(class_id: int, db: DBSession):
+    class_item = db.query(Class).filter(Class.id == class_id).first()
+    if not class_item:
+        raise HTTPException(status_code=404, detail="Class not found")
+
+    db.delete(class_item)
+    db.commit()
+    return None
+
 
 # semester
 @app.post("/semesters/", status_code=status.HTTP_201_CREATED, response_model=SemesterInDB)

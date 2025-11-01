@@ -8,7 +8,7 @@ import Dashboard from './Dashboard';
 import StudentsPage from './Student/StudentsPage';
 import TeachersPage from './Teacher/TeachersPage';
 import ClassesPage from './Classes/ClassesPage';
-import AddClassPage from './Classes/AddClassesPage';
+//import AddClassPage from './Classes/AddClassesPage';
 import SemestersPage from './SemestersPage';
 import '../style/Dashboard.css';
 
@@ -58,7 +58,7 @@ const App = () => {
                   <Route path="/students" element={<StudentsPage />} />
                   <Route path="/teachers" element={<TeachersPage />} />
                   <Route path="/classes" element={<ClassesPage />} />
-                  <Route path="/classes/add" element={<AddClassPage />} />
+
                   <Route path="/subjects" element={<SubjectsPage />} />
                   <Route path="/semesters" element={<SemestersPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
