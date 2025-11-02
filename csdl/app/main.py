@@ -264,11 +264,16 @@ def read_student_class(student_id: int, class_id: int, semester_id: int, db: DBS
         raise HTTPException(status_code=404, detail="StudentClass not found")
     return entry
 
+# dashboard summary
+
 
 @app.get("/dashboard/summary")
 def get_dashboard_summary(db: DBSession):
     # --- Tổng số học sinh ---
     total_students = db.query(Student).count()
+
+    # --- Tổng số giáo viên ---
+    total_teachers = db.query(Teacher).count()
 
     # --- Tổng số lớp ---
     total_grades = db.query(Class).count()
@@ -292,6 +297,7 @@ def get_dashboard_summary(db: DBSession):
     return {
         "totalStudents": total_students,
         "totalGrades": total_grades,
+        "totalTeachers": total_teachers,
         "activeSchoolYear": active_school_year,
         "registrationsApplied": registrations_applied,
         "registrationsCompleted": registrations_completed,
